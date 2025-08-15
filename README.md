@@ -195,10 +195,10 @@ mysqldump -u root -p invent_barang > backup_$(date +%Y%m%d).sql
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-## 📞 Support
+## 📞 Support : 082130304411
 
 Untuk pertanyaan dan dukungan:
-- Email: support@example.com
+- Email: riyanadityapradanaa.com
 - Documentation: [Wiki](link-to-wiki)
 - Issues: [GitHub Issues](link-to-issues)
 
