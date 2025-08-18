@@ -220,7 +220,9 @@ $sql = "SELECT i.*, pb.nama_barang as nama_pengajuan, pb.spesifikasi as spesifik
         GROUP_CONCAT(CONCAT(dd.divisi, ' (', dd.stok_divisi, ')') SEPARATOR ', ') as divisi_info,
         COUNT(dd.id) as jumlah_divisi,
         kb_last.divisi_target AS divisi_kerusakan_terakhir,
-        kb_div.status_divisi_summary
+        kb_div.status_divisi_summary,
+        p_last.tanggal_penyerahan AS tanggal_penyerahan,
+        p_last.catatan_penyerahan AS catatan_penyerahan
         FROM inventaris i 
         LEFT JOIN pengajuan_barang pb ON i.pengajuan_id = pb.id 
         LEFT JOIN distribusi_divisi dd ON i.id = dd.inventaris_id
@@ -247,9 +249,19 @@ $sql = "SELECT i.*, pb.nama_barang as nama_pengajuan, pb.spesifikasi as spesifik
             ) t
             GROUP BY t.inventaris_id
         ) kb_div ON kb_div.inventaris_id = i.id
+        LEFT JOIN (
+            SELECT p1.inventaris_id, p1.tanggal_penyerahan, p1.catatan_penyerahan
+            FROM penyerahan_barang p1
+            JOIN (
+                SELECT inventaris_id, MAX(tanggal_penyerahan) AS last_date
+                FROM penyerahan_barang
+                GROUP BY inventaris_id
+            ) p2 ON p1.inventaris_id = p2.inventaris_id AND p1.tanggal_penyerahan = p2.last_date
+        ) p_last ON p_last.inventaris_id = i.id
         GROUP BY i.id
         ORDER BY i.created_at DESC";
 $result = $conn->query($sql);
+// ...existing code...
 ?>
 
 <!DOCTYPE html>
@@ -263,7 +275,7 @@ $result = $conn->query($sql);
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <style>
         .sidebar {
-            min-height: 100vh;
+            min-height: 180vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         .sidebar .nav-link {
@@ -542,6 +554,7 @@ $result = $conn->query($sql);
                                                         <div class="modal-body">
                                                             <div class="row">
                                                                 <div class="col-md-6">
+                                                                    <p><strong>No Inventaris:</strong><br><?php echo htmlspecialchars($row['no_inventaris']); ?></p>
                                                                     <p><strong>Nama Barang:</strong><br><?php echo htmlspecialchars($row['nama_barang']); ?></p>
                                                                     <p><strong>Jenis Barang:</strong><br><?php echo htmlspecialchars($row['jenis_barang'] ?: '-'); ?></p>
                                                                     <p><strong>Spesifikasi:</strong><br><?php echo htmlspecialchars($row['spesifikasi'] ?: '-'); ?></p>

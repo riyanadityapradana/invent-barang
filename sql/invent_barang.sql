@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 13, 2025 at 03:33 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Generation Time: Aug 18, 2025 at 05:13 PM
+-- Server version: 10.4.28-MariaDB
+-- PHP Version: 8.0.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -44,10 +44,13 @@ CREATE TABLE `distribusi_divisi` (
 
 CREATE TABLE `inventaris` (
   `id` int(11) NOT NULL,
+  `no_inventaris` varchar(100) DEFAULT NULL,
   `pengajuan_id` int(11) DEFAULT NULL,
   `nama_barang` varchar(200) NOT NULL,
   `spesifikasi` text DEFAULT NULL,
+  `jenis_barang` enum('Komputer & Laptop','Komponen Komputer & Laptop','Printer & Scanner','Komponen Printer & Scanner','Komponen Network') NOT NULL,
   `nomor_seri` varchar(100) DEFAULT NULL,
+  `ip_address` varchar(50) DEFAULT NULL,
   `tanggal_pembelian` date DEFAULT NULL,
   `harga` decimal(15,2) DEFAULT NULL,
   `status` enum('Tersedia','Diserahkan','Rusak','Dalam Perbaikan','Dipindahkan','Disposisi') DEFAULT 'Tersedia',
@@ -148,7 +151,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `nama`, `role`, `created_at`) VALUES
-(1, 'staff', 'staff123', 'Staff IT Demo', 'staff', '2025-08-12 02:02:45'),
+(1, 'staff', 'staff123', 'Staff IT', 'staff', '2025-08-12 02:02:45'),
 (2, 'kepala', 'kepala123', 'Kepala Ruangan IT', 'kepala', '2025-08-12 02:02:45'),
 (3, 'keuangan', 'keuangan123', 'Bagian Keuangan', 'keuangan', '2025-08-12 02:02:45'),
 (4, 'ob', 'ob123', 'Office Boy', 'ob', '2025-08-12 02:02:45'),
@@ -216,37 +219,37 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `distribusi_divisi`
 --
 ALTER TABLE `distribusi_divisi`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `inventaris`
 --
 ALTER TABLE `inventaris`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `kerusakan_barang`
 --
 ALTER TABLE `kerusakan_barang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `pemindahan_barang`
 --
 ALTER TABLE `pemindahan_barang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `pengajuan_barang`
 --
 ALTER TABLE `pengajuan_barang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `penyerahan_barang`
 --
 ALTER TABLE `penyerahan_barang`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
