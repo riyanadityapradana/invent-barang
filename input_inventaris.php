@@ -38,54 +38,74 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!$canInput) {
         $error = "Stok pengajuan kosong. Silakan melakukan pengajuan terlebih dahulu.";
     } else {
-    $nomor_seri = $_POST['nomor_seri'];
-    $tanggal_pembelian = $_POST['tanggal_pembelian'];
-    $harga = $_POST['harga'];
-    $stok = $_POST['stok'];
-    $catatan = $_POST['catatan'];
-    $jenis_barang = $_POST['jenis_barang'];
-    
-    // Validasi server-side stok > 0
-    if ((int)$stok <= 0) {
-        $error = "Stok tidak boleh kosong. Silakan melakukan pengajuan terlebih dahulu.";
-    } else {
-    
-	// Insert ke tabel inventaris
-	$sql = "INSERT INTO inventaris (pengajuan_id, nama_barang, spesifikasi, nomor_seri, tanggal_pembelian, harga, stok, catatan_penyerahan, jenis_barang) 
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-	$stmt = $conn->prepare($sql);
-	if (!$stmt) {
-		// Coba fallback jika kolom catatan_penyerahan tidak ada
-        $sql = "INSERT INTO inventaris (pengajuan_id, nama_barang, spesifikasi, nomor_seri, tanggal_pembelian, harga, stok, jenis_barang) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            $error = "Gagal menyiapkan query: " . $conn->error;
-        } else {
-            $harga = (float)$harga;
-            $stok = (int)$stok;
-            $stmt->bind_param("issssdis", $pengajuan_id, $pengajuan['nama_barang'], $pengajuan['spesifikasi'], $nomor_seri, $tanggal_pembelian, $harga, $stok, $jenis_barang);
+        $nomor_seri = $_POST['nomor_seri'];
+        $tanggal_pembelian = $_POST['tanggal_pembelian'];
+        $harga = $_POST['harga'];
+        $stok = $_POST['stok'];
+        $catatan = $_POST['catatan'];
+        $jenis_barang = $_POST['jenis_barang'];
+        $ip_address = NULL;
+        if ($jenis_barang === 'Komputer & Laptop') {
+            $ip_address = isset($_POST['ip_address']) ? trim($_POST['ip_address']) : NULL;
         }
-    } else {
-        // Tipe parameter: i (int), s (string), d (double)
-        // Urutan: id, nama, spesifikasi, nomor_seri, tanggal_pembelian, harga, stok, catatan_penyerahan, jenis_barang
-        $harga = (float)$harga;
-        $stok = (int)$stok;
-        $stmt->bind_param("issssdiss", $pengajuan_id, $pengajuan['nama_barang'], $pengajuan['spesifikasi'], $nomor_seri, $tanggal_pembelian, $harga, $stok, $catatan, $jenis_barang);
-    }
-    
-    if ($stmt && $stmt->execute()) {
-        // Update status pengajuan menjadi "Diterima"
-        $sql = "UPDATE pengajuan_barang SET status = 'Diterima' WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("i", $pengajuan_id);
-        $stmt->execute();
-        
-        $success = "Barang berhasil ditambahkan ke inventaris!";
-	} else {
-		$error = "Gagal menambahkan barang: " . ($stmt ? $stmt->error : $conn->error);
-    }
-    }
+
+        // Generate no_inventaris otomatis
+        $tahun = date('Y');
+        $prefix = 'IT/LOG/RSPI/' . $tahun;
+        $sqlMax = "SELECT MAX(no_inventaris) AS max_no FROM inventaris WHERE no_inventaris LIKE '%$prefix%'";
+        $resultMax = $conn->query($sqlMax);
+        $max_no = 0;
+        if ($resultMax && $rowMax = $resultMax->fetch_assoc()) {
+            if ($rowMax['max_no']) {
+                // Ambil angka urut dari kode terakhir
+                preg_match('/^(\d{3})\/IT\/LOG\/RSPI\/' . $tahun . '$/', $rowMax['max_no'], $matches);
+                if (isset($matches[1])) {
+                    $max_no = (int)$matches[1];
+                }
+            }
+        }
+        $next_no = str_pad($max_no + 1, 3, '0', STR_PAD_LEFT);
+        $no_inventaris = $next_no . '/' . $prefix;
+
+        // Validasi server-side stok > 0
+        if ((int)$stok <= 0) {
+            $error = "Stok tidak boleh kosong. Silakan melakukan pengajuan terlebih dahulu.";
+        } else {
+            // Insert ke tabel inventaris
+            $sql = "INSERT INTO inventaris (pengajuan_id, nama_barang, spesifikasi, nomor_seri, no_inventaris, tanggal_pembelian, harga, stok, catatan_penyerahan, jenis_barang, ip_address) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                // Fallback jika kolom catatan_penyerahan/no_inventaris/ip_address tidak ada
+                $sql = "INSERT INTO inventaris (pengajuan_id, nama_barang, spesifikasi, nomor_seri, no_inventaris, tanggal_pembelian, harga, stok, jenis_barang) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $conn->prepare($sql);
+                if (!$stmt) {
+                    $error = "Gagal menyiapkan query: " . $conn->error;
+                } else {
+                    $harga = (float)$harga;
+                    $stok = (int)$stok;
+                    $stmt->bind_param("issssssdi", $pengajuan_id, $pengajuan['nama_barang'], $pengajuan['spesifikasi'], $nomor_seri, $no_inventaris, $tanggal_pembelian, $harga, $stok, $jenis_barang);
+                }
+            } else {
+                // Urutan: id, nama, spesifikasi, nomor_seri, no_inventaris, tanggal_pembelian, harga, stok, catatan_penyerahan, jenis_barang, ip_address
+                $harga = (float)$harga;
+                $stok = (int)$stok;
+                $stmt->bind_param("isssssssdss", $pengajuan_id, $pengajuan['nama_barang'], $pengajuan['spesifikasi'], $nomor_seri, $no_inventaris, $tanggal_pembelian, $harga, $stok, $catatan, $jenis_barang, $ip_address);
+            }
+
+            if ($stmt && $stmt->execute()) {
+                // Update status pengajuan menjadi "Diterima"
+                $sql = "UPDATE pengajuan_barang SET status = 'Diterima' WHERE id = ?";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("i", $pengajuan_id);
+                $stmt->execute();
+
+                $success = "Barang berhasil ditambahkan ke inventaris!";
+            } else {
+                $error = "Gagal menambahkan barang: " . ($stmt ? $stmt->error : $conn->error);
+            }
+        }
     }
 }
 ?>
@@ -244,10 +264,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </div>
                                 </div>
                                 <div class="mb-3">
+                                    <label for="no_inventaris" class="form-label">No. Inventaris (Otomatis)</label>
+                                    <input type="text" class="form-control" id="no_inventaris" name="no_inventaris" value="<?php 
+                                        // Preview kode inventaris otomatis di form
+                                        $tahun = date('Y');
+                                        $prefix = 'IT/LOG/RSPI/' . $tahun;
+                                        $sqlMax = "SELECT MAX(no_inventaris) AS max_no FROM inventaris WHERE no_inventaris LIKE '%$prefix%'";
+                                        $resultMax = isset($conn) ? $conn->query($sqlMax) : false;
+                                        $max_no = 0;
+                                        if ($resultMax && $rowMax = $resultMax->fetch_assoc()) {
+                                            if ($rowMax['max_no']) {
+                                                preg_match('/^(\d{3})\/IT\/LOG\/RSPI\/' . $tahun . '$/', $rowMax['max_no'], $matches);
+                                                if (isset($matches[1])) {
+                                                    $max_no = (int)$matches[1];
+                                                }
+                                            }
+                                        }
+                                        $next_no = str_pad($max_no + 1, 3, '0', STR_PAD_LEFT);
+                                        $no_inventaris_preview = $next_no . '/' . $prefix;
+                                        echo htmlspecialchars($no_inventaris_preview);
+                                    ?>" readonly>
+                                </div>
+                                <div class="mb-3">
                                     <label for="jenis_barang" class="form-label">
                                         <i class="fas fa-cubes me-2"></i>Jenis Barang <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select" id="jenis_barang" name="jenis_barang" required>
+                                    <select class="form-select" id="jenis_barang" name="jenis_barang" required onchange="toggleIpAddressInput()">
                                         <option value="">-- Pilih Jenis Barang --</option>
                                         <option value="Komputer & Laptop">Komputer & Laptop</option>
                                         <option value="Komponen Komputer & Laptop">Komponen Komputer & Laptop</option>
@@ -255,6 +297,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <option value="Komponen Printer & Scanner">Komponen Printer & Scanner</option>
                                         <option value="Komponen Network">Komponen Network</option>
                                     </select>
+                                </div>
+                                <div class="mb-3" id="ipAddressInput" style="display:none;">
+                                    <label for="ip_address" class="form-label">IP Address</label>
+                                    <input type="text" class="form-control" id="ip_address" name="ip_address" placeholder="Contoh: 192.168.1.10">
                                 </div>
                                 <div class="mb-3">
                                     <label for="harga" class="form-label">Harga Pembelian</label>
@@ -333,5 +379,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+<script>
+function toggleIpAddressInput() {
+    var jenisBarang = document.getElementById('jenis_barang').value;
+    var ipInput = document.getElementById('ipAddressInput');
+    if (jenisBarang === 'Komputer & Laptop') {
+        ipInput.style.display = 'block';
+    } else {
+        ipInput.style.display = 'none';
+        document.getElementById('ip_address').value = '';
+    }
+}
+// Inisialisasi saat halaman load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleIpAddressInput();
+});
+</script>
 </body>
 </html>
