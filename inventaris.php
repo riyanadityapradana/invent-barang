@@ -496,21 +496,29 @@ $result = $conn->query($sql);
                                                     ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($row['divisi_info']): ?>
-                                                        <?php 
-                                                        $divisi_array = explode(', ', $row['divisi_info']);
-                                                        foreach ($divisi_array as $divisi_item): 
-                                                            $divisi_parts = explode(' (', $divisi_item);
-                                                            $nama_divisi = $divisi_parts[0];
-                                                            $stok_divisi = rtrim($divisi_parts[1], ')');
-                                                        ?>
-                                                            <span class="badge bg-info me-1 mb-1">
-                                                                <?php echo htmlspecialchars($nama_divisi); ?> (<?php echo $stok_divisi; ?>)
-                                                            </span>
-                                                        <?php endforeach; ?>
-                                                    <?php else: ?>
-                                                        <span class="badge bg-secondary">Belum ada divisi</span>
-                                                    <?php endif; ?>
+                                                        <?php if ($row['divisi_info']): ?>
+                                                            <?php 
+                                                            $divisi_array = explode(', ', $row['divisi_info']);
+                                                            $divisi_stok = [];
+                                                            foreach ($divisi_array as $divisi_item) {
+                                                                $divisi_parts = explode(' (', $divisi_item);
+                                                                $nama_divisi = trim($divisi_parts[0]);
+                                                                $stok_divisi = isset($divisi_parts[1]) ? (int) rtrim($divisi_parts[1], ')') : 0;
+                                                                if ($stok_divisi > 0) {
+                                                                    $divisi_stok[$nama_divisi] = $stok_divisi;
+                                                                }
+                                                            }
+                                                            if (!empty($divisi_stok)) {
+                                                                foreach ($divisi_stok as $nama_divisi => $stok_divisi) {
+                                                                    echo '<span class="badge bg-info me-1 mb-1">' . htmlspecialchars($nama_divisi) . ' (' . $stok_divisi . ')</span> ';
+                                                                }
+                                                            } else {
+                                                                echo '<span class="badge bg-secondary">Belum ada divisi</span>';
+                                                            }
+                                                            ?>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-secondary">Belum ada divisi</span>
+                                                        <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <div class="btn-group" role="group">
