@@ -70,7 +70,7 @@ class MYPDF extends TCPDF {
         $this->Cell(0, 5, 'RUMAH SAKIT PELITA INSANI MARTAPURA  ', 0, 1, 'C');
         $this->SetFont('helvetica', '', 12);
         $this->Cell(0, 5, 'Terakreditasi KARS Versi SNARS Edisi 1 Tingkat Madya', 0, 1, 'C');
-        $this->Image('../../../assets/img/bintang.png', 160, 15 , 15);
+        $this->Image('img/bintang.png', 160, 15 , 15);
         $this->SetFont('helvetica', '', 10);
         $this->Cell(0, 5, 'Jl. Sekumpul No. 66 Martapura - Telp. (0511) 4722210, 4722220, Kalimantan Selatan', 0, 1, 'C');
         $html = '<span style="color:black;">Fax. (0511) 4722230, </span><span style="color:red;">Emergency Call (0511) 4722222</span> <span>Email: </span><span style="color:blue;">rs.pelitainsani@gmail.com</span>';

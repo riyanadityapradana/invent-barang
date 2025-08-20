@@ -208,10 +208,7 @@ $result = $conn->query($sql);
                                             <tr>
                                                 <td><?php echo $no++; ?></td>
                                                 <td>
-                                                    <strong><?php echo htmlspecialchars($row['nama_barang']); ?></strong>
-                                                    <?php if ($row['spesifikasi']): ?>
-                                                        <br><small class="text-muted"><?php echo htmlspecialchars($row['spesifikasi']); ?></small>
-                                                    <?php endif; ?>
+                                                        <strong><?php echo htmlspecialchars($row['nama_barang']); ?></strong>
                                                 </td>
                                                 <td><?php echo htmlspecialchars($row['spesifikasi']); ?></td>
                                                 <td><span class="badge bg-info"><?php echo $row['jumlah']; ?> Unit</span></td>

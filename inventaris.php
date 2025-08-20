@@ -1,6 +1,6 @@
 <?php
 session_start();
-
+$today = date('Y-m-d');
 // Cek login
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
@@ -366,6 +366,10 @@ $result = $conn->query($sql);
                             <a href="daftar_pengajuan.php" class="btn btn-outline-primary">
                                 <i class="fas fa-list me-2"></i>Lihat Pengajuan
                             </a>
+                            <!-- Tombol Laporan PDF -->
+                            <button class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#laporanPdfModal">
+                                <i class="fas fa-file-pdf me-2"></i>Laporan PDF
+                            </button>
                         </div>
                     </div>
                     
@@ -900,6 +904,38 @@ $result = $conn->query($sql);
             </div>
         </div>
     </div>
+
+        <!-- Modal Laporan PDF -->
+        <div class="modal fade" id="laporanPdfModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="get" action="laporan-barangstatus_pdf.php" target="_blank">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Laporan Data Barang PDF</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Status Barang</label>
+                                <select class="form-select" name="status" required>
+                                    <option value="">-- Pilih Status --</option>
+                                    <option value="Tersedia">Tersedia</option>
+                                    <option value="Rusak">Rusak</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Tahun</label>
+                                <input type="number" class="form-control" name="tahun" min="2015" max="<?php echo date('Y'); ?>" value="<?php echo date('Y'); ?>" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-danger"><i class="fas fa-file-pdf me-2"></i>Download & Print PDF</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
