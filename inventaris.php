@@ -571,6 +571,9 @@ $result = $conn->query($sql);
                                                                     <p><strong>Jenis Barang:</strong><br><?php echo htmlspecialchars($row['jenis_barang'] ?: '-'); ?></p>
                                                                     <p><strong>Spesifikasi:</strong><br><?php echo htmlspecialchars($row['spesifikasi'] ?: '-'); ?></p>
                                                                     <p><strong>Nomor Seri:</strong><br><?php echo htmlspecialchars($row['nomor_seri'] ?: '-'); ?></p>
+                                                                    <?php if (strtolower(trim($row['jenis_barang'])) == 'komputer & laptop'): ?>
+                                                                        <p><strong>IP Address:</strong><br><?php echo htmlspecialchars($row['ip_address'] ?: '-'); ?></p>
+                                                                    <?php endif; ?>
                                                                     <p><strong>Harga:</strong><br>Rp <?php echo number_format($row['harga'], 0, ',', '.'); ?></p>
                                                                 </div>
                                                                 <div class="col-md-6">
