@@ -94,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     <div class="mt-4 text-muted">
                         <small>Demo Login:</small><br>
-                        <small>Staff IT: staff/staff123</small><br>
-                        <small>Kepala Ruangan: kepala/kepala123</small><br>
+                        <small>Staff IT: staff/staff</small><br>
+                        <small>Kepala Ruangan: arien/arien123</small><br>
                         <small>Keuangan: keuangan/keuangan123</small><br>
                         <small>Admin: admin/admin123</small>
                     </div>
