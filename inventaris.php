@@ -28,6 +28,56 @@ $role = $_SESSION['role'];
 
 $success = $error = '';
 
+// Estimasi no inventaris berikutnya untuk tahun ini
+$tahun_sekarang = date('Y');
+$sql_last_modal = "SELECT no_inventaris FROM inventaris WHERE no_inventaris LIKE '%/IT/LOG/RSPI/$tahun_sekarang' ORDER BY id DESC LIMIT 1";
+$result_last_modal = $conn->query($sql_last_modal);
+$urut_modal = 1;
+if ($result_last_modal && $row_last_modal = $result_last_modal->fetch_assoc()) {
+    $last_no_modal = $row_last_modal['no_inventaris'];
+    $parts_modal = explode('/', $last_no_modal);
+    if (is_numeric($parts_modal[0])) {
+        $urut_modal = intval($parts_modal[0]) + 1;
+    }
+}
+$no_inventaris_modal = str_pad($urut_modal, 3, '0', STR_PAD_LEFT) . "/IT/LOG/RSPI/" . $tahun_sekarang;
+
+// Proses tambah data inventaris
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah_inventaris'])) {
+    // Ambil data dari form
+    $tahun = date('Y');
+    // Ambil nomor urut terakhir
+    $sql_last = "SELECT no_inventaris FROM inventaris WHERE no_inventaris LIKE '%/IT/LOG/RSPI/$tahun' ORDER BY id DESC LIMIT 1";
+    $result_last = $conn->query($sql_last);
+    $urut = 1;
+    if ($result_last && $row_last = $result_last->fetch_assoc()) {
+        $last_no = $row_last['no_inventaris'];
+        $parts = explode('/', $last_no);
+        if (is_numeric($parts[0])) {
+            $urut = intval($parts[0]) + 1;
+        }
+    }
+    $no_inventaris = str_pad($urut, 3, '0', STR_PAD_LEFT) . "/IT/LOG/RSPI/" . $tahun;
+
+    $nama_barang = $_POST['nama_barang'];
+    $spesifikasi = $_POST['spesifikasi'];
+    $jenis_barang = $_POST['jenis_barang'];
+    $nomor_seri = $_POST['nomor_seri'];
+    $ip_address = ($jenis_barang == 'Komputer & Laptop') ? $_POST['ip_address'] : NULL;
+    $tanggal_pembelian = $_POST['tanggal_pembelian'];
+    $status = 'Baik';
+    $stok = $_POST['stok'];
+
+    $sql_insert = "INSERT INTO inventaris (no_inventaris, nama_barang, spesifikasi, jenis_barang, nomor_seri, ip_address, tanggal_pembelian, status, stok, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+    $stmt = $conn->prepare($sql_insert);
+    $stmt->bind_param("ssssssssi", $no_inventaris, $nama_barang, $spesifikasi, $jenis_barang, $nomor_seri, $ip_address, $tanggal_pembelian, $status, $stok);
+    if ($stmt->execute()) {
+        $success = "Data inventaris berhasil ditambahkan!";
+    } else {
+        $error = "Gagal menambah data inventaris: " . $conn->error;
+    }
+}
+
 // Proses penyerahan barang
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['penyerahan'])) {
     $inventaris_id = $_POST['inventaris_id'];
@@ -53,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['penyerahan'])) {
         try {
             // Update stok inventaris
             $stok_baru = $row_stok['stok'] - $jumlah_serah;
-            $status_baru = ($stok_baru > 0) ? 'Tersedia' : 'Diserahkan';
+            $status_baru = ($stok_baru > 0) ? 'Baik' : 'Diserahkan';
             
             $sql = "UPDATE inventaris SET stok = ?, status = ? WHERE id = ?";
             $stmt = $conn->prepare($sql);
@@ -116,7 +166,7 @@ if (isset($_POST['input_kerusakan'])) {
             if ($jenis_kerusakan == 'Tidak Dapat Diperbaiki') {
                 $success = "Data kerusakan berhasil disimpan! Status diperbarui menjadi Rusak. Stok tidak berubah.";
             } else {
-                $success = "Data kerusakan berhasil disimpan! Status tetap Tersedia. Stok tidak berubah.";
+                $success = "Data kerusakan berhasil disimpan! Status tetap Baik. Stok tidak berubah.";
             }
 
             // Update status inventaris tanpa mengubah stok
@@ -126,7 +176,7 @@ if (isset($_POST['input_kerusakan'])) {
                 $stmt->bind_param("i", $inventaris_id);
                 $stmt->execute();
             } else {
-                $sql = "UPDATE inventaris SET status = 'Tersedia' WHERE id = ?";
+                $sql = "UPDATE inventaris SET status = 'Baik' WHERE id = ?";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param("i", $inventaris_id);
                 $stmt->execute();
@@ -275,7 +325,7 @@ $result = $conn->query($sql);
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <style>
         .sidebar {
-            min-height: 180vh;
+            min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         .sidebar .nav-link {
@@ -354,20 +404,21 @@ $result = $conn->query($sql);
                 <div class="p-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h2><i class="fas fa-boxes me-2"></i>Data Inventaris</h2>
-                        <div>
-                            <button class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#filterModal">
+                        <div class="d-flex gap-2" style="margin-left:auto;">
+                            <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#tambahInventarisModal">
+                                <i class="fas fa-plus"></i> Tambah Data
+                            </button>
+                            <!-- Tombol Filter, Laporan, dll tetap -->
+                            <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#filterModal">
                                 <i class="fas fa-filter me-2"></i>Filter
                             </button>
-                            <?php if (!in_array($role, ['keuangan'])): ?>
-                            <a href="laporan_inventaris.php" class="btn btn-outline-success me-2">
+                            <a href="laporan_inventaris.php" class="btn btn-outline-success">
                                 <i class="fas fa-chart-bar me-2"></i>Laporan
                             </a>
-                            <?php endif; ?>
                             <a href="daftar_pengajuan.php" class="btn btn-outline-primary">
                                 <i class="fas fa-list me-2"></i>Lihat Pengajuan
                             </a>
-                            <!-- Tombol Laporan PDF -->
-                            <button class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#laporanPdfModal">
+                            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#laporanPdfModal">
                                 <i class="fas fa-file-pdf me-2"></i>Laporan PDF
                             </button>
                         </div>
@@ -389,12 +440,77 @@ $result = $conn->query($sql);
                     
                     <div class="card">
                         <div class="card-body">
+                                <!-- Modal Tambah Inventaris -->
+                                <div class="modal fade" id="tambahInventarisModal" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <form method="POST">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Tambah Data Inventaris</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">No Inventaris</label>
+                                                                <input type="text" class="form-control" value="<?php echo $no_inventaris_modal; ?>" readonly>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Nama Barang</label>
+                                                                <input type="text" name="nama_barang" class="form-control" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Spesifikasi</label>
+                                                                <textarea name="spesifikasi" class="form-control" rows="2" required></textarea>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Jenis Barang</label>
+                                                                <select name="jenis_barang" id="jenisBarangInput" class="form-select" required>
+                                                                    <option value="">Pilih Jenis Barang</option>
+                                                                    <option value="Komputer & Laptop">Komputer & Laptop</option>
+                                                                    <option value="Komponen Komputer & Laptop">Komponen Komputer & Laptop</option>
+                                                                    <option value="Printer & Scanner">Printer & Scanner</option>
+                                                                    <option value="Komponen Printer & Scanner">Komponen Printer & Scanner</option>
+                                                                    <option value="Komponen Network">Komponen Network</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="mb-3 d-none" id="ipAddressInputWrap">
+                                                                <label class="form-label">IP Address</label>
+                                                                <input type="text" name="ip_address" id="ipAddressInput" class="form-control" placeholder="Contoh: 192.168.1.10">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Nomor Seri</label>
+                                                                <input type="text" name="nomor_seri" class="form-control" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Tanggal Pembelian</label>
+                                                                <input type="date" name="tanggal_pembelian" class="form-control" value="<?php echo date('Y-m-d'); ?>" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Stok</label>
+                                                                <input type="number" name="stok" class="form-control" min="1" value="1" required>
+                                                            </div>
+                                                            <input type="hidden" name="status" value="Baik">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" name="tambah_inventaris" class="btn btn-info">Simpan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             
                             
                             <?php if ($result->num_rows > 0): ?>
                                 <div class="table-responsive">
                                     <table class="table table-hover" id="example1">
-                                        <thead class="table-light">
+                                        <thead style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: #fff;">
                                             <tr>
                                                 <th>No</th>
                                                 <th>Nama Barang</th>
@@ -427,7 +543,7 @@ $result = $conn->query($sql);
                                                     <?php
                                                     $status_class = '';
                                                     switch ($row['status']) {
-                                                        case 'Tersedia':
+                                                        case 'Baik':
                                                             $status_class = 'bg-success';
                                                             break;
                                                         case 'Diserahkan':
@@ -476,13 +592,13 @@ $result = $conn->query($sql);
 
                                                     // Bagi menjadi rusak vs tersedia per divisi
                                                     $rusakDiv = [];
-                                                    $tersediaDiv = [];
+                                                    $baikDiv = [];
                                                     foreach (array_keys($allDivisions) as $divisiNama) {
                                                         $jenis = $lastDamagePerDiv[$divisiNama] ?? '';
                                                         if ($jenis === 'Tidak Dapat Diperbaiki') {
                                                             $rusakDiv[] = htmlspecialchars($divisiNama);
                                                         } else {
-                                                            $tersediaDiv[] = htmlspecialchars($divisiNama);
+                                                            $baikDiv[] = htmlspecialchars($divisiNama);
                                                         }
                                                     }
 
@@ -490,10 +606,10 @@ $result = $conn->query($sql);
                                                     if (!empty($rusakDiv)) {
                                                         echo '<span class="badge bg-danger status-badge">Rusak (' . implode(', ', $rusakDiv) . ')</span> ';
                                                     }
-                                                    if (!empty($tersediaDiv)) {
-                                                        echo '<span class="badge bg-success status-badge">Tersedia (' . implode(', ', $tersediaDiv) . ')</span>';
+                                                    if (!empty($baikDiv)) {
+                                                        echo '<span class="badge bg-success status-badge">Baik (' . implode(', ', $baikDiv) . ')</span>';
                                                     }
-                                                    if (empty($rusakDiv) && empty($tersediaDiv)) {
+                                                    if (empty($rusakDiv) && empty($baikDiv)) {
                                                         // Fallback jika tidak ada distribusi divisi
                                                         echo '<span class="badge ' . $status_class . ' status-badge">' . htmlspecialchars($row['status']) . '</span>';
                                                     }
@@ -532,7 +648,7 @@ $result = $conn->query($sql);
                                                             <i class="fas fa-eye"></i>
                                                         </button>
                                                         
-                                                        <?php if ($row['status'] == 'Tersedia'): ?>
+                                                        <?php if ($row['status'] == 'Baik'): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-success" 
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#penyerahanModal<?php echo $row['id']; ?>">
@@ -608,13 +724,13 @@ $result = $conn->query($sql);
 
                                                                         // Bagi menjadi rusak vs tersedia per divisi
                                                                         $rusakDiv = [];
-                                                                        $tersediaDiv = [];
+                                                                        $baikDiv = [];
                                                                         foreach (array_keys($allDivisions) as $divisiNama) {
                                                                             $jenis = $lastDamagePerDiv[$divisiNama] ?? '';
                                                                             if ($jenis === 'Tidak Dapat Diperbaiki') {
                                                                                 $rusakDiv[] = htmlspecialchars($divisiNama);
                                                                             } else {
-                                                                                $tersediaDiv[] = htmlspecialchars($divisiNama);
+                                                                                $baikDiv[] = htmlspecialchars($divisiNama);
                                                                             }
                                                                         }
 
@@ -622,17 +738,17 @@ $result = $conn->query($sql);
                                                                         if (!empty($rusakDiv)) {
                                                                             echo '<span class="badge bg-danger">Rusak (' . implode(', ', $rusakDiv) . ')</span> ';
                                                                         }
-                                                                        if (!empty($tersediaDiv)) {
-                                                                            echo '<span class="badge bg-success">Tersedia (' . implode(', ', $tersediaDiv) . ')</span>';
+                                                                        if (!empty($baikDiv)) {
+                                                                            echo '<span class="badge bg-success">Baik (' . implode(', ', $baikDiv) . ')</span>';
                                                                         }
-                                                                        if (empty($rusakDiv) && empty($tersediaDiv)) {
+                                                                        if (empty($rusakDiv) && empty($baikDiv)) {
                                                                             // Fallback jika tidak ada distribusi divisi
                                                                             echo '<span class="badge ' . $status_class . '">' . htmlspecialchars($row['status']) . '</span>';
                                                                         }
                                                                         ?>
                                                                     </p>
 
-                                                                    <p><strong>Distribusi Divisi:</strong><br>
+                                                                    <p><strong>Divisi Sekarang:</strong><br>
                                                                         <?php 
                                                                         $divisi_stok = [];
                                                                         if (!empty($row['divisi_info'])) {
@@ -675,7 +791,7 @@ $result = $conn->query($sql);
                                             </div>
                                             
                                             <!-- Modal Penyerahan -->
-                                            <?php if ($row['status'] == 'Tersedia'): ?>
+                                            <?php if ($row['status'] == 'Baik'): ?>
                                             <div class="modal fade" id="penyerahanModal<?php echo $row['id']; ?>" tabindex="-1">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
@@ -686,7 +802,7 @@ $result = $conn->query($sql);
                                                             </div>
                                                             <div class="modal-body">
                                                                 <p><strong>Barang:</strong> <?php echo htmlspecialchars($row['nama_barang']); ?></p>
-                                                                <p><strong>Stok Tersedia:</strong> <span class="badge bg-primary"><?php echo $row['stok']; ?> Unit</span></p>
+                                                                <p><strong>Stok Baik:</strong> <span class="badge bg-primary"><?php echo $row['stok']; ?> Unit</span></p>
                                                                 <div class="mb-3">
                                                                     <label class="form-label">Jumlah yang Diserahkan</label>
                                                                     <input type="number" name="jumlah_serah" class="form-control" value="1" min="1" max="<?php echo $row['stok']; ?>" required>
@@ -901,7 +1017,7 @@ $result = $conn->query($sql);
                         <label class="form-label">Status Barang</label>
                         <select class="form-select" id="statusSelect">
                             <option value="">Semua Status</option>
-                            <option value="Tersedia">Tersedia</option>
+                            <option value="Baik">Baik</option>
                             <option value="Rusak">Rusak</option>
                             <option value="Dalam Perbaikan">Dalam Perbaikan</option>
                         </select>
@@ -929,7 +1045,7 @@ $result = $conn->query($sql);
                                 <label class="form-label">Status Barang</label>
                                 <select class="form-select" name="status" required>
                                     <option value="">-- Pilih Status --</option>
-                                    <option value="Tersedia">Tersedia</option>
+                                    <option value="Baik">Baik</option>
                                     <option value="Rusak">Rusak</option>
                                 </select>
                             </div>
@@ -952,6 +1068,19 @@ $result = $conn->query($sql);
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     
+        <script>
+            // Tampilkan input IP Address jika jenis barang Komputer & Laptop
+            $(document).ready(function() {
+                $('#jenisBarangInput').on('change', function() {
+                    if ($(this).val() === 'Komputer & Laptop') {
+                        $('#ipAddressInputWrap').removeClass('d-none');
+                    } else {
+                        $('#ipAddressInputWrap').addClass('d-none');
+                        $('#ipAddressInput').val('');
+                    }
+                });
+            });
+        </script>
     <script>
         // Validasi jumlah penyerahan tidak melebihi stok
         document.addEventListener('DOMContentLoaded', function() {
