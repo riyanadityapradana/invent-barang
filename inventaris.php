@@ -415,9 +415,9 @@ $result = $conn->query($sql);
                                                 <td><?php echo $no++; ?></td>
                                                 <td>
                                                     <strong><?php echo htmlspecialchars($row['nama_barang']); ?></strong>
-                                                    <?php if ($row['spesifikasi']): ?>
+                                                    <!-- <?php if ($row['spesifikasi']): ?> 
                                                         <br><small class="text-muted"><?php echo htmlspecialchars($row['spesifikasi']); ?></small>
-                                                    <?php endif; ?>
+                                                    <?php endif; ?>-->
                                                 </td>
                                                 <td><?php echo htmlspecialchars($row['nomor_seri'] ?: '-'); ?></td>
                                                  <td><?php echo htmlspecialchars($row['jenis_barang'] ?: '-'); ?></td>

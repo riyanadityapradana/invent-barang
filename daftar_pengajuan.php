@@ -77,7 +77,7 @@ $result = $conn->query($sql);
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <style>
         .sidebar {
-            min-height: 215vh;
+            min-height: 320vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         .sidebar .nav-link {
